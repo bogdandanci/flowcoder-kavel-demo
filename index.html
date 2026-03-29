@@ -1,0 +1,748 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kaveloverzicht — De Groene Weide, Kaatsheuvel</title>
+    <meta name="description" content="Interactief kaveloverzicht nieuwbouwproject De Groene Weide. Bekijk beschikbare bouwkavels en toon uw interesse.">
+    <meta property="og:title" content="Bouwkavels De Groene Weide — Kaatsheuvel">
+    <meta property="og:description" content="12 ruime bouwkavels. Klik op een kavel om details te bekijken en uw interesse te tonen.">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+        :root {
+            --green: #2D7A4F;
+            --green-light: #4CAF50;
+            --green-bg: #E8F5E9;
+            --gold: #D4982A;
+            --gold-bg: #FFF8E1;
+            --red: #D14343;
+            --blue: #3182CE;
+            --text: #1A1A2E;
+            --muted: #6B7280;
+            --bg: #F0F2F0;
+            --white: #FFFFFF;
+            --border: #D1D5DB;
+            --shadow: 0 2px 10px rgba(0,0,0,0.07);
+            --radius: 10px;
+            --panel: 370px;
+        }
+        body { font-family:'Inter',-apple-system,sans-serif; background:var(--bg); color:var(--text); height:100vh; display:flex; flex-direction:column; overflow:hidden; }
+
+        /* ==================== HEADER ==================== */
+        .hdr { background:var(--white); border-bottom:1px solid var(--border); padding:.6rem 1.2rem; display:flex; align-items:center; gap:.8rem; flex-shrink:0; z-index:20; }
+        .hdr-logo { display:flex; align-items:center; gap:.45rem; }
+        .hdr-logo svg { width:20px; height:20px; color:var(--green); }
+        .hdr-title { font-size:1.05rem; font-weight:700; }
+        .hdr-sub { font-size:.78rem; color:var(--muted); }
+        .hdr-spacer { flex:1; }
+        .badge { padding:.3rem .8rem; border-radius:16px; font-size:.78rem; font-weight:600; }
+        .badge-green { background:var(--green-bg); color:var(--green); }
+        .btn { padding:.35rem .75rem; border:1px solid var(--border); background:var(--white); border-radius:6px; cursor:pointer; font-size:.78rem; font-family:inherit; font-weight:500; color:var(--text); transition:all .15s; }
+        .btn:hover { background:var(--bg); }
+        .btn.active { background:var(--green); color:var(--white); border-color:var(--green); }
+        .btn-demo { border-color:var(--gold); background:var(--gold-bg); color:#7A5A10; font-weight:600; }
+        .btn-demo:hover { background:var(--gold); color:var(--white); }
+        .btn-demo.running { background:var(--gold); color:var(--white); animation:pulse 1.5s infinite; }
+        @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.65} }
+
+        /* Filter bar */
+        .filters { background:var(--white); border-bottom:1px solid var(--border); padding:.4rem 1.2rem; display:flex; align-items:center; gap:.6rem; flex-shrink:0; font-size:.78rem; }
+        .filter-label { color:var(--muted); font-weight:500; }
+        .filter-btn { padding:.25rem .6rem; border:1px solid var(--border); background:var(--white); border-radius:14px; cursor:pointer; font-size:.72rem; font-family:inherit; transition:all .15s; display:flex; align-items:center; gap:.3rem; }
+        .filter-btn:hover { border-color:var(--green); }
+        .filter-btn.on { background:var(--green); color:var(--white); border-color:var(--green); }
+        .filter-dot { width:8px; height:8px; border-radius:2px; }
+        .dot-green { background:#4CAF50; }
+        .dot-gold { background:var(--gold); }
+        .dot-red { background:var(--red); }
+        .filter-sep { width:1px; height:16px; background:var(--border); }
+        .filter-range { display:flex; align-items:center; gap:.3rem; }
+        .filter-range select { padding:.2rem .3rem; border:1px solid var(--border); border-radius:4px; font-size:.72rem; font-family:inherit; }
+
+        /* ==================== MAIN ==================== */
+        .main { flex:1; display:flex; overflow:hidden; position:relative; }
+
+        /* ==================== MAP ==================== */
+        .map { flex:1; position:relative; overflow:hidden; background:#dce8dc; }
+        .map-inner { position:absolute; inset:0; display:flex; align-items:center; justify-content:center; }
+
+        /* The SVG land plot */
+        .plot-svg { width:840px; height:580px; }
+        .plot-svg .ground { fill:#b8d4a8; stroke:#8aba72; stroke-width:2; }
+        .plot-svg .road { fill:#e0ddd5; stroke:#c9c4b8; stroke-width:1; }
+        .plot-svg .road-line { stroke:#fff; stroke-width:1.5; stroke-dasharray:8 6; }
+        .plot-svg .tree { fill:#6aaa55; opacity:.7; }
+        .plot-svg .grass-pattern { fill:url(#grassPat); opacity:.3; }
+
+        /* SVG kavel polygons */
+        .kavel-poly {
+            fill:rgba(255,255,255,.85);
+            stroke:#4CAF50;
+            stroke-width:2;
+            cursor:pointer;
+            transition:all .2s;
+        }
+        .kavel-poly:hover { fill:rgba(232,245,233,.95); stroke-width:3; filter:drop-shadow(0 2px 6px rgba(45,122,79,.3)); }
+        .kavel-poly.clicked { fill:rgba(200,230,201,.9); stroke:var(--green); stroke-width:2.5; }
+        .kavel-poly.optie { fill:rgba(255,248,225,.9); stroke:var(--gold); }
+        .kavel-poly.optie:hover { fill:rgba(255,243,205,.95); stroke:var(--gold); }
+        .kavel-poly.verkocht { fill:rgba(255,235,235,.7); stroke:var(--red); cursor:default; opacity:.6; }
+        .kavel-poly.hidden { opacity:.08; pointer-events:none; }
+
+        /* SVG kavel labels */
+        .kavel-label { pointer-events:none; }
+        .kavel-label .nr { font-size:22px; font-weight:800; fill:var(--green); font-family:'Inter',sans-serif; }
+        .kavel-label .info { font-size:10px; fill:var(--muted); font-family:'Inter',sans-serif; }
+        .kavel-label .price { font-size:11px; fill:var(--green); font-weight:600; font-family:'Inter',sans-serif; }
+        .kavel-poly.optie + .kavel-label .nr { fill:#7A5A10; }
+        .kavel-poly.optie + .kavel-label .price { fill:#7A5A10; }
+        .kavel-poly.verkocht + .kavel-label .nr { fill:var(--red); opacity:.5; }
+        .kavel-poly.verkocht + .kavel-label .price { fill:var(--red); opacity:.5; }
+
+        /* Click badge on kavel */
+        .click-badge { pointer-events:none; opacity:0; transition:opacity .3s; }
+        .click-badge.vis { opacity:1; }
+        .click-badge circle { fill:var(--green); }
+        .click-badge text { fill:var(--white); font-size:10px; font-weight:700; font-family:'Inter',sans-serif; }
+
+        /* Hover tooltip */
+        .tooltip {
+            position:absolute;
+            background:var(--white);
+            border:1px solid var(--border);
+            border-radius:8px;
+            padding:.6rem .8rem;
+            box-shadow:0 4px 16px rgba(0,0,0,.12);
+            pointer-events:none;
+            opacity:0;
+            transform:translateY(6px);
+            transition:opacity .15s, transform .15s;
+            z-index:30;
+            font-size:.8rem;
+            min-width:160px;
+        }
+        .tooltip.vis { opacity:1; transform:translateY(0); }
+        .tooltip-title { font-weight:700; margin-bottom:.2rem; }
+        .tooltip-row { display:flex; justify-content:space-between; gap:1rem; color:var(--muted); }
+        .tooltip-row strong { color:var(--text); }
+        .tooltip-status { display:inline-block; padding:1px 6px; border-radius:10px; font-size:.65rem; font-weight:600; margin-top:.3rem; }
+        .tooltip-status.s-b { background:var(--green-bg); color:var(--green); }
+        .tooltip-status.s-o { background:var(--gold-bg); color:#7A5A10; }
+        .tooltip-status.s-v { background:#FFE5E5; color:var(--red); }
+
+        /* ==================== DEMO ==================== */
+        .demo-cursor { position:absolute; width:28px; height:28px; pointer-events:none; z-index:100; opacity:0; transition:left .7s cubic-bezier(.4,0,.2,1), top .7s cubic-bezier(.4,0,.2,1), opacity .25s; }
+        .demo-cursor.vis { opacity:1; }
+        .demo-cursor svg { width:28px; height:28px; filter:drop-shadow(2px 3px 4px rgba(0,0,0,.35)); }
+        .demo-ring { position:absolute; border:2px solid var(--green); border-radius:50%; pointer-events:none; z-index:99; animation:ring .5s ease-out forwards; }
+        @keyframes ring { from{width:8px;height:8px;opacity:1} to{width:44px;height:44px;opacity:0} }
+        .demo-toast { position:absolute; top:.8rem; left:50%; transform:translateX(-50%); background:var(--gold); color:var(--white); padding:.35rem 1.1rem; border-radius:16px; font-size:.78rem; font-weight:600; z-index:50; opacity:0; transition:opacity .3s; pointer-events:none; }
+        .demo-toast.vis { opacity:1; }
+        .demo-step { position:absolute; bottom:3rem; left:50%; transform:translateX(-50%); background:var(--white); border:1px solid var(--border); border-radius:8px; padding:.5rem 1rem; box-shadow:var(--shadow); font-size:.82rem; z-index:50; opacity:0; transition:opacity .3s; pointer-events:none; max-width:320px; text-align:center; }
+        .demo-step.vis { opacity:1; }
+
+        /* ==================== SIDE PANEL ==================== */
+        .panel { width:var(--panel); background:var(--white); border-left:1px solid var(--border); display:flex; flex-direction:column; flex-shrink:0; overflow:hidden; transition:margin-right .3s; }
+        .panel.hide { margin-right:calc(-1*var(--panel)); }
+        .panel-hdr { padding:.75rem 1rem; border-bottom:1px solid var(--border); font-weight:700; font-size:.95rem; display:flex; align-items:center; gap:.4rem; }
+        .panel-hdr svg { width:16px; height:16px; color:var(--green); }
+        .panel-body { flex:1; overflow-y:auto; padding:.75rem 1rem; }
+        .p-section { margin-bottom:1.2rem; }
+        .p-section h3 { font-size:.7rem; text-transform:uppercase; letter-spacing:.07em; color:var(--muted); margin-bottom:.4rem; }
+
+        /* Stats */
+        .stats { display:grid; grid-template-columns:1fr 1fr; gap:.5rem; }
+        .stat { background:var(--bg); border-radius:8px; padding:.55rem; text-align:center; }
+        .stat-val { font-size:1.4rem; font-weight:800; color:var(--green); }
+        .stat-lbl { font-size:.65rem; color:var(--muted); }
+
+        /* Ranking */
+        .rank-list { list-style:none; }
+        .rank-item { display:flex; align-items:center; gap:.5rem; padding:.35rem 0; border-bottom:1px solid var(--bg); }
+        .rank-pos { width:20px; height:20px; border-radius:50%; font-size:.65rem; font-weight:700; display:flex; align-items:center; justify-content:center; flex-shrink:0; background:var(--bg); color:var(--muted); }
+        .rank-pos.top { background:var(--gold); color:var(--white); }
+        .rank-grow { flex:1; }
+        .rank-name { font-size:.78rem; font-weight:600; }
+        .rank-bar-bg { height:5px; background:var(--bg); border-radius:3px; margin-top:2px; overflow:hidden; }
+        .rank-bar { height:100%; background:var(--green); border-radius:3px; transition:width .4s; }
+        .rank-count { font-size:.82rem; font-weight:700; color:var(--green); min-width:24px; text-align:right; }
+
+        /* Feed */
+        .feed { list-style:none; max-height:200px; overflow-y:auto; }
+        .feed-item { display:flex; gap:.5rem; padding:.3rem 0; font-size:.75rem; border-bottom:1px solid var(--bg); animation:fadeIn .3s; }
+        @keyframes fadeIn { from{opacity:0;transform:translateY(-5px)} to{opacity:1;transform:translateY(0)} }
+        .feed-dot { width:7px; height:7px; background:var(--green); border-radius:50%; margin-top:4px; flex-shrink:0; }
+        .feed-time { color:var(--muted); font-size:.65rem; }
+
+        /* ==================== DETAIL PANEL (click kavel) ==================== */
+        .detail { position:absolute; right:0; top:0; bottom:0; width:340px; background:var(--white); border-left:1px solid var(--border); box-shadow:-4px 0 20px rgba(0,0,0,.08); z-index:40; transform:translateX(100%); transition:transform .3s; overflow-y:auto; }
+        .detail.open { transform:translateX(0); }
+        .detail-close { position:absolute; top:.6rem; right:.6rem; width:28px; height:28px; border:none; background:var(--bg); border-radius:50%; cursor:pointer; font-size:1rem; color:var(--muted); display:flex; align-items:center; justify-content:center; }
+        .detail-close:hover { background:var(--border); }
+        .detail-header { padding:1.2rem 1rem .8rem; }
+        .detail-badge { display:inline-block; padding:2px 8px; border-radius:10px; font-size:.68rem; font-weight:600; margin-bottom:.4rem; }
+        .detail-badge.s-b { background:var(--green-bg); color:var(--green); }
+        .detail-badge.s-o { background:var(--gold-bg); color:#7A5A10; }
+        .detail-title { font-size:1.3rem; font-weight:800; }
+        .detail-loc { font-size:.82rem; color:var(--muted); margin-top:.15rem; }
+        .detail-grid { display:grid; grid-template-columns:1fr 1fr; gap:.5rem; padding:0 1rem; margin-bottom:1rem; }
+        .detail-cell { background:var(--bg); border-radius:8px; padding:.6rem; }
+        .detail-cell-label { font-size:.65rem; text-transform:uppercase; color:var(--muted); letter-spacing:.04em; }
+        .detail-cell-value { font-size:1rem; font-weight:700; margin-top:1px; }
+        .detail-cell-value.green { color:var(--green); }
+        .detail-desc { padding:0 1rem; font-size:.85rem; color:var(--muted); line-height:1.6; margin-bottom:1rem; }
+        .detail-interest { padding:0 1rem; margin-bottom:1rem; display:flex; align-items:center; gap:.6rem; }
+        .detail-interest-count { font-size:1.1rem; font-weight:800; color:var(--green); }
+        .detail-interest-label { font-size:.8rem; color:var(--muted); }
+        .interest-btn { display:block; width:calc(100% - 2rem); margin:0 1rem 1rem; padding:.65rem; background:var(--green); color:var(--white); border:none; border-radius:8px; font-size:.9rem; font-weight:600; font-family:inherit; cursor:pointer; transition:background .15s; }
+        .interest-btn:hover { background:#246841; }
+        .interest-btn:disabled { background:#A5D6A7; cursor:default; }
+        .interest-btn.done { background:var(--green-bg); color:var(--green); }
+
+        /* ==================== FOOTER ==================== */
+        .ftr { background:var(--white); border-top:1px solid var(--border); padding:.4rem 1.2rem; font-size:.7rem; color:var(--muted); text-align:center; flex-shrink:0; }
+        .ftr a { color:var(--green); text-decoration:none; }
+
+        /* ==================== RESPONSIVE ==================== */
+        @media(max-width:1000px){
+            :root{--panel:100%}
+            .main{flex-direction:column}
+            .panel{border-left:none;border-top:1px solid var(--border);max-height:45vh}
+            .panel.hide{margin-right:0;display:none}
+            .plot-svg{width:100%;height:auto;min-width:600px}
+            .map{overflow:auto}
+            .hdr{flex-wrap:wrap;gap:.4rem}
+            .filters{flex-wrap:wrap}
+            .detail{width:100%}
+        }
+    </style>
+</head>
+<body>
+
+<!-- Header -->
+<header class="hdr">
+    <div class="hdr-logo">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+        <div>
+            <div class="hdr-title">De Groene Weide</div>
+            <div class="hdr-sub">12 bouwkavels &bull; Kaatsheuvel</div>
+        </div>
+    </div>
+    <div class="hdr-spacer"></div>
+    <span class="badge badge-green" id="totalBadge">0 interesse</span>
+    <button class="btn btn-demo" id="demoBtn" onclick="toggleDemo()">&#9654; Demo</button>
+    <button class="btn active" id="panelBtn" onclick="togglePanel()">Dashboard</button>
+</header>
+
+<!-- Filters -->
+<div class="filters">
+    <span class="filter-label">Filter:</span>
+    <button class="filter-btn on" data-filter="beschikbaar" onclick="toggleFilter(this)"><div class="filter-dot dot-green"></div> Beschikbaar</button>
+    <button class="filter-btn on" data-filter="optie" onclick="toggleFilter(this)"><div class="filter-dot dot-gold"></div> Onder optie</button>
+    <button class="filter-btn on" data-filter="verkocht" onclick="toggleFilter(this)"><div class="filter-dot dot-red"></div> Verkocht</button>
+    <div class="filter-sep"></div>
+    <div class="filter-range">
+        <span>Prijs:</span>
+        <select id="filterPrice" onchange="applyFilters()">
+            <option value="all">Alle</option>
+            <option value="200">Tot &euro;200.000</option>
+            <option value="250">Tot &euro;250.000</option>
+            <option value="999">Boven &euro;250.000</option>
+        </select>
+    </div>
+    <div class="filter-range">
+        <span>Opp.:</span>
+        <select id="filterSize" onchange="applyFilters()">
+            <option value="all">Alle</option>
+            <option value="400">Tot 400 m&sup2;</option>
+            <option value="500">400-500 m&sup2;</option>
+            <option value="999">500+ m&sup2;</option>
+        </select>
+    </div>
+</div>
+
+<!-- Main -->
+<div class="main">
+
+    <!-- Map Area -->
+    <div class="map" id="mapArea">
+        <div class="map-inner">
+            <svg class="plot-svg" viewBox="0 0 840 580" id="plotSvg">
+                <defs>
+                    <pattern id="grassPat" width="6" height="6" patternUnits="userSpaceOnUse">
+                        <line x1="0" y1="6" x2="3" y2="0" stroke="#6a9" stroke-width=".5" opacity=".3"/>
+                    </pattern>
+                </defs>
+
+                <!-- Ground -->
+                <rect class="ground" x="0" y="0" width="840" height="580" rx="8"/>
+                <rect class="grass-pattern" x="0" y="0" width="840" height="580" rx="8"/>
+
+                <!-- Roads -->
+                <rect class="road" x="0" y="0" width="840" height="30"/>
+                <line class="road-line" x1="0" y1="15" x2="840" y2="15"/>
+                <text x="420" y="12" text-anchor="middle" font-size="9" fill="#8a8575" font-family="Inter" font-weight="600" letter-spacing="2">HOOFDSTRAAT</text>
+
+                <rect class="road" x="0" y="550" width="840" height="30"/>
+                <line class="road-line" x1="0" y1="565" x2="840" y2="565"/>
+                <text x="420" y="562" text-anchor="middle" font-size="9" fill="#8a8575" font-family="Inter" font-weight="600" letter-spacing="2">WOONLAAN</text>
+
+                <rect class="road" x="0" y="0" width="30" height="580"/>
+                <line class="road-line" x1="15" y1="0" x2="15" y2="580"/>
+                <text x="12" y="290" text-anchor="middle" font-size="9" fill="#8a8575" font-family="Inter" font-weight="600" letter-spacing="2" transform="rotate(-90,12,290)">PARKWEG</text>
+
+                <!-- Internal path -->
+                <rect class="road" x="30" y="248" width="810" height="24" rx="0" opacity=".6"/>
+                <line class="road-line" x1="30" y1="260" x2="840" y2="260" opacity=".6"/>
+                <text x="435" y="257" text-anchor="middle" font-size="7" fill="#8a8575" font-family="Inter" font-weight="500" letter-spacing="1">PAD</text>
+
+                <!-- Green areas / trees -->
+                <circle class="tree" cx="60" cy="260" r="8"/>
+                <circle class="tree" cx="200" cy="258" r="6"/>
+                <circle class="tree" cx="350" cy="262" r="7"/>
+                <circle class="tree" cx="500" cy="259" r="6"/>
+                <circle class="tree" cx="650" cy="261" r="8"/>
+                <circle class="tree" cx="790" cy="258" r="6"/>
+
+                <!-- ===== ROW 1: Kavels 1-4 (top, facing Hoofdstraat) ===== -->
+                <rect class="kavel-poly" data-id="1" x="40" y="38" width="185" height="200" rx="4"/>
+                <g class="kavel-label"><text class="nr" x="132" y="120" text-anchor="middle">1</text><text class="info" x="132" y="138" text-anchor="middle">420 m²</text><text class="price" x="132" y="152" text-anchor="middle">€195.000</text></g>
+                <g class="click-badge" id="cb-1"><circle cx="210" cy="48" r="11"/><text x="210" y="52" text-anchor="middle">0</text></g>
+
+                <rect class="kavel-poly" data-id="2" x="235" y="38" width="185" height="200" rx="4"/>
+                <g class="kavel-label"><text class="nr" x="327" y="120" text-anchor="middle">2</text><text class="info" x="327" y="138" text-anchor="middle">385 m²</text><text class="price" x="327" y="152" text-anchor="middle">€185.000</text></g>
+                <g class="click-badge" id="cb-2"><circle cx="405" cy="48" r="11"/><text x="405" y="52" text-anchor="middle">0</text></g>
+
+                <rect class="kavel-poly" data-id="3" x="430" y="38" width="190" height="200" rx="4"/>
+                <g class="kavel-label"><text class="nr" x="525" y="120" text-anchor="middle">3</text><text class="info" x="525" y="138" text-anchor="middle">450 m²</text><text class="price" x="525" y="152" text-anchor="middle">€210.000</text></g>
+                <g class="click-badge" id="cb-3"><circle cx="605" cy="48" r="11"/><text x="605" y="52" text-anchor="middle">0</text></g>
+
+                <rect class="kavel-poly optie" data-id="4" x="630" y="38" width="200" height="200" rx="4"/>
+                <g class="kavel-label"><text class="nr" x="730" y="120" text-anchor="middle">4</text><text class="info" x="730" y="138" text-anchor="middle">510 m²</text><text class="price" x="730" y="152" text-anchor="middle">€245.000</text></g>
+                <g class="click-badge" id="cb-4"><circle cx="815" cy="48" r="11"/><text x="815" y="52" text-anchor="middle">0</text></g>
+
+                <!-- ===== ROW 2: Kavels 5-8 (middle top, facing pad) ===== -->
+                <rect class="kavel-poly" data-id="5" x="40" y="280" width="185" height="125" rx="4"/>
+                <g class="kavel-label"><text class="nr" x="132" y="335" text-anchor="middle">5</text><text class="info" x="132" y="351" text-anchor="middle">395 m²</text><text class="price" x="132" y="365" text-anchor="middle">€190.000</text></g>
+                <g class="click-badge" id="cb-5"><circle cx="210" cy="290" r="11"/><text x="210" y="294" text-anchor="middle">0</text></g>
+
+                <rect class="kavel-poly" data-id="6" x="235" y="280" width="185" height="125" rx="4"/>
+                <g class="kavel-label"><text class="nr" x="327" y="335" text-anchor="middle">6</text><text class="info" x="327" y="351" text-anchor="middle">410 m²</text><text class="price" x="327" y="365" text-anchor="middle">€198.000</text></g>
+                <g class="click-badge" id="cb-6"><circle cx="405" cy="290" r="11"/><text x="405" y="294" text-anchor="middle">0</text></g>
+
+                <rect class="kavel-poly verkocht" data-id="7" x="430" y="280" width="190" height="125" rx="4"/>
+                <g class="kavel-label"><text class="nr" x="525" y="335" text-anchor="middle">7</text><text class="info" x="525" y="351" text-anchor="middle">440 m²</text><text class="price" x="525" y="365" text-anchor="middle">Verkocht</text></g>
+                <g class="click-badge" id="cb-7"><circle cx="605" cy="290" r="11"/><text x="605" y="294" text-anchor="middle">0</text></g>
+
+                <rect class="kavel-poly" data-id="8" x="630" y="280" width="200" height="125" rx="4"/>
+                <g class="kavel-label"><text class="nr" x="730" y="335" text-anchor="middle">8</text><text class="info" x="730" y="351" text-anchor="middle">480 m²</text><text class="price" x="730" y="365" text-anchor="middle">€230.000</text></g>
+                <g class="click-badge" id="cb-8"><circle cx="815" cy="290" r="11"/><text x="815" y="294" text-anchor="middle">0</text></g>
+
+                <!-- ===== ROW 3: Kavels 9-12 (bottom, facing Woonlaan) ===== -->
+                <rect class="kavel-poly" data-id="9" x="40" y="415" width="210" height="125" rx="4"/>
+                <g class="kavel-label"><text class="nr" x="145" y="470" text-anchor="middle">9</text><text class="info" x="145" y="486" text-anchor="middle">560 m²</text><text class="price" x="145" y="500" text-anchor="middle">€275.000</text></g>
+                <g class="click-badge" id="cb-9"><circle cx="235" cy="425" r="11"/><text x="235" y="429" text-anchor="middle">0</text></g>
+
+                <rect class="kavel-poly" data-id="10" x="260" y="415" width="180" height="125" rx="4"/>
+                <g class="kavel-label"><text class="nr" x="350" y="470" text-anchor="middle">10</text><text class="info" x="350" y="486" text-anchor="middle">370 m²</text><text class="price" x="350" y="500" text-anchor="middle">€178.000</text></g>
+                <g class="click-badge" id="cb-10"><circle cx="425" cy="425" r="11"/><text x="425" y="429" text-anchor="middle">0</text></g>
+
+                <rect class="kavel-poly optie" data-id="11" x="450" y="415" width="185" height="125" rx="4"/>
+                <g class="kavel-label"><text class="nr" x="542" y="470" text-anchor="middle">11</text><text class="info" x="542" y="486" text-anchor="middle">390 m²</text><text class="price" x="542" y="500" text-anchor="middle">€188.000</text></g>
+                <g class="click-badge" id="cb-11"><circle cx="620" cy="425" r="11"/><text x="620" y="429" text-anchor="middle">0</text></g>
+
+                <rect class="kavel-poly" data-id="12" x="645" y="415" width="185" height="125" rx="4"/>
+                <g class="kavel-label"><text class="nr" x="737" y="470" text-anchor="middle">12</text><text class="info" x="737" y="486" text-anchor="middle">350 m²</text><text class="price" x="737" y="500" text-anchor="middle">€168.000</text></g>
+                <g class="click-badge" id="cb-12"><circle cx="815" cy="425" r="11"/><text x="815" y="429" text-anchor="middle">0</text></g>
+
+                <!-- North arrow -->
+                <g transform="translate(800,50)">
+                    <circle cx="0" cy="0" r="16" fill="rgba(255,255,255,.85)" stroke="#ccc"/>
+                    <polygon points="0,-12 -4,0 4,0" fill="var(--red)"/>
+                    <polygon points="0,12 -4,0 4,0" fill="#ccc"/>
+                    <text x="0" y="-3" text-anchor="middle" font-size="7" font-weight="700" fill="var(--red)" font-family="Inter">N</text>
+                </g>
+            </svg>
+        </div>
+
+        <!-- Tooltip -->
+        <div class="tooltip" id="tooltip">
+            <div class="tooltip-title" id="ttTitle"></div>
+            <div class="tooltip-row"><span>Oppervlakte</span><strong id="ttSize"></strong></div>
+            <div class="tooltip-row"><span>Prijs</span><strong id="ttPrice"></strong></div>
+            <div id="ttStatus"></div>
+        </div>
+
+        <!-- Demo elements -->
+        <div class="demo-cursor" id="demoCursor"><svg viewBox="0 0 24 24"><path d="M4 1L4 19L8.5 14.5L13 22L16 20.5L11.5 13L18 13Z" fill="#1A1A2E" stroke="white" stroke-width="1"/></svg></div>
+        <div class="demo-toast" id="demoToast">Demo modus</div>
+        <div class="demo-step" id="demoStep"></div>
+
+        <!-- Detail panel (slides in from right) -->
+        <div class="detail" id="detail">
+            <button class="detail-close" onclick="closeDetail()">&times;</button>
+            <div class="detail-header">
+                <div class="detail-badge" id="detBadge"></div>
+                <div class="detail-title" id="detTitle"></div>
+                <div class="detail-loc" id="detLoc"></div>
+            </div>
+            <div class="detail-grid">
+                <div class="detail-cell"><div class="detail-cell-label">Oppervlakte</div><div class="detail-cell-value" id="detSize"></div></div>
+                <div class="detail-cell"><div class="detail-cell-label">Prijs</div><div class="detail-cell-value green" id="detPrice"></div></div>
+                <div class="detail-cell"><div class="detail-cell-label">Type</div><div class="detail-cell-value">Bouwkavel</div></div>
+                <div class="detail-cell"><div class="detail-cell-label">Bouwklaar</div><div class="detail-cell-value">Direct</div></div>
+            </div>
+            <p class="detail-desc" id="detDesc"></p>
+            <div class="detail-interest">
+                <div class="detail-interest-count" id="detClicks">0</div>
+                <div class="detail-interest-label">mensen toonden interesse</div>
+            </div>
+            <button class="interest-btn" id="detBtn" onclick="registerInterest()">Ik heb interesse</button>
+        </div>
+    </div>
+
+    <!-- Side Panel (owner dashboard) -->
+    <aside class="panel" id="panel">
+        <div class="panel-hdr">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/></svg>
+            Eigenaar Dashboard
+        </div>
+        <div class="panel-body">
+            <div class="p-section">
+                <h3>Overzicht</h3>
+                <div class="stats">
+                    <div class="stat"><div class="stat-val" id="sTotal">0</div><div class="stat-lbl">Totaal interesse</div></div>
+                    <div class="stat"><div class="stat-val" id="sKavels">0</div><div class="stat-lbl">Kavels met clicks</div></div>
+                    <div class="stat"><div class="stat-val" id="sPopular">—</div><div class="stat-lbl">Populairste</div></div>
+                    <div class="stat"><div class="stat-val" id="sAvail">0</div><div class="stat-lbl">Beschikbaar</div></div>
+                </div>
+            </div>
+            <div class="p-section">
+                <h3>Interesse per kavel</h3>
+                <ul class="rank-list" id="rankList"></ul>
+            </div>
+            <div class="p-section">
+                <h3>Recente activiteit</h3>
+                <ul class="feed" id="feedList">
+                    <li class="feed-item"><div class="feed-dot"></div><div><div>Kavelkaart geladen</div><div class="feed-time">Nu</div></div></li>
+                </ul>
+            </div>
+        </div>
+    </aside>
+</div>
+
+<!-- Footer -->
+<footer class="ftr">Gebouwd door <a href="https://flowcoder.nl" target="_blank">Flowcoder</a> &mdash; KVK 42021092 &bull; &copy; 2026</footer>
+
+<script>
+// ============================================================
+// DATA
+// ============================================================
+const K = [
+    { id:1,  size:'420 m²', sizeN:420, price:'€195.000', priceN:195, status:'beschikbaar', desc:'Ruime hoeklocatie aan de Parkweg. Ideaal voor vrijstaande woning met zij-entree. Ochtendzon in de tuin.' },
+    { id:2,  size:'385 m²', sizeN:385, price:'€185.000', priceN:185, status:'beschikbaar', desc:'Compacte bouwkavel op gunstige ligging. Geschikt voor twee-onder-een-kap of vrijstaand. Zuid-georiënteerde achtertuin.' },
+    { id:3,  size:'450 m²', sizeN:450, price:'€210.000', priceN:210, status:'beschikbaar', desc:'Extra diepe kavel met mogelijkheid tot grote achtertuin. Direct aan het wandelpad. Rustige ligging.' },
+    { id:4,  size:'510 m²', sizeN:510, price:'€245.000', priceN:245, status:'optie',       desc:'Grootste kavel in rij 1. Momenteel onder optie. Brede voorzijde aan de Hoofdstraat.' },
+    { id:5,  size:'395 m²', sizeN:395, price:'€190.000', priceN:190, status:'beschikbaar', desc:'Centraal gelegen kavel met zicht op het groen. Korte loopafstand naar voorzieningen.' },
+    { id:6,  size:'410 m²', sizeN:410, price:'€198.000', priceN:198, status:'beschikbaar', desc:'Middenlocatie met optimale verhouding prijs/oppervlakte. Geschikt voor compact vrijstaand.' },
+    { id:7,  size:'440 m²', sizeN:440, price:'€215.000', priceN:215, status:'verkocht',    desc:'Dit kavel is verkocht.' },
+    { id:8,  size:'480 m²', sizeN:480, price:'€230.000', priceN:230, status:'beschikbaar', desc:'Hoeklocatie met extra ruimte. Mogelijkheid voor garage aan de zijkant. Avondzon.' },
+    { id:9,  size:'560 m²', sizeN:560, price:'€275.000', priceN:275, status:'beschikbaar', desc:'Grootste kavel van het project. Ruim genoeg voor vrijstaande villa met dubbele garage.' },
+    { id:10, size:'370 m²', sizeN:370, price:'€178.000', priceN:178, status:'beschikbaar', desc:'Voordeligste kavel. Compact maar efficiënt. Perfecte starterlocatie.' },
+    { id:11, size:'390 m²', sizeN:390, price:'€188.000', priceN:188, status:'optie',       desc:'Onder optie. Gelegen tussen Woonlaan en het groene middengebied.' },
+    { id:12, size:'350 m²', sizeN:350, price:'€168.000', priceN:168, status:'beschikbaar', desc:'Gezellige hoeklocatie aan de Woonlaan. Licht en open. Geschikt voor compacte woning.' },
+];
+
+const clicks = {}; K.forEach(k => clicks[k.id] = 0);
+const feed = [];
+let selected = null;
+let demoOn = false, demoTimer = null;
+
+// ============================================================
+// TOOLTIP (hover)
+// ============================================================
+const tt = document.getElementById('tooltip');
+const mapArea = document.getElementById('mapArea');
+
+document.querySelectorAll('.kavel-poly').forEach(el => {
+    el.addEventListener('mouseenter', e => {
+        const id = +el.dataset.id;
+        const k = K.find(x => x.id === id);
+        document.getElementById('ttTitle').textContent = `Kavel ${k.id}`;
+        document.getElementById('ttSize').textContent = k.size;
+        document.getElementById('ttPrice').textContent = k.status === 'verkocht' ? 'Verkocht' : k.price;
+        const cls = k.status === 'beschikbaar' ? 's-b' : k.status === 'optie' ? 's-o' : 's-v';
+        const label = k.status === 'beschikbaar' ? 'Beschikbaar' : k.status === 'optie' ? 'Onder optie' : 'Verkocht';
+        document.getElementById('ttStatus').innerHTML = `<span class="tooltip-status ${cls}">${label}</span>`;
+        tt.classList.add('vis');
+    });
+    el.addEventListener('mousemove', e => {
+        const r = mapArea.getBoundingClientRect();
+        tt.style.left = (e.clientX - r.left + 14) + 'px';
+        tt.style.top = (e.clientY - r.top - 10) + 'px';
+    });
+    el.addEventListener('mouseleave', () => tt.classList.remove('vis'));
+
+    // Click -> open detail
+    el.addEventListener('click', () => {
+        const id = +el.dataset.id;
+        const k = K.find(x => x.id === id);
+        if (k.status === 'verkocht') return;
+        openDetail(k);
+    });
+});
+
+// ============================================================
+// DETAIL PANEL
+// ============================================================
+function openDetail(k) {
+    selected = k;
+    const d = document.getElementById('detail');
+    const cls = k.status === 'beschikbaar' ? 's-b' : 's-o';
+    const label = k.status === 'beschikbaar' ? 'Beschikbaar' : 'Onder optie';
+    document.getElementById('detBadge').className = `detail-badge ${cls}`;
+    document.getElementById('detBadge').textContent = label;
+    document.getElementById('detTitle').textContent = `Kavel ${k.id}`;
+    document.getElementById('detLoc').textContent = 'De Groene Weide, Kaatsheuvel';
+    document.getElementById('detSize').textContent = k.size;
+    document.getElementById('detPrice').textContent = k.price;
+    document.getElementById('detDesc').textContent = k.desc;
+    document.getElementById('detClicks').textContent = clicks[k.id];
+
+    const btn = document.getElementById('detBtn');
+    if (localStorage.getItem(`int_${k.id}`)) {
+        btn.textContent = 'Interesse geregistreerd ✓';
+        btn.disabled = true;
+        btn.className = 'interest-btn done';
+    } else {
+        btn.textContent = 'Ik heb interesse';
+        btn.disabled = false;
+        btn.className = 'interest-btn';
+    }
+    d.classList.add('open');
+}
+
+function closeDetail() {
+    document.getElementById('detail').classList.remove('open');
+    selected = null;
+}
+
+// ============================================================
+// INTEREST
+// ============================================================
+function registerInterest(id) {
+    const kid = id || (selected ? selected.id : null);
+    if (!kid) return;
+    const k = K.find(x => x.id === kid);
+    if (!k || k.status === 'verkocht') return;
+
+    clicks[kid]++;
+    if (!id) localStorage.setItem(`int_${kid}`, '1');
+
+    // Badge
+    const cb = document.getElementById(`cb-${kid}`);
+    cb.querySelector('text').textContent = clicks[kid];
+    cb.classList.add('vis');
+
+    // Mark kavel
+    const poly = document.querySelector(`.kavel-poly[data-id="${kid}"]`);
+    if (k.status === 'beschikbaar') poly.classList.add('clicked');
+
+    // Feed
+    const t = new Date().toLocaleTimeString('nl-NL', {hour:'2-digit', minute:'2-digit', second:'2-digit'});
+    feed.unshift({ text:`Interesse in Kavel ${kid} (${k.size})`, time:t });
+
+    updateDash();
+    if (selected && selected.id === kid) {
+        document.getElementById('detClicks').textContent = clicks[kid];
+        const btn = document.getElementById('detBtn');
+        btn.textContent = 'Interesse geregistreerd ✓';
+        btn.disabled = true;
+        btn.className = 'interest-btn done';
+    }
+
+    // API (silent)
+    fetch('api.php', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({action:'like',kavel_id:`kavel_${kid}`}) }).catch(()=>{});
+}
+
+// ============================================================
+// DASHBOARD
+// ============================================================
+function updateDash() {
+    const total = Object.values(clicks).reduce((a,b)=>a+b,0);
+    const withClicks = Object.values(clicks).filter(c=>c>0).length;
+    const avail = K.filter(k=>k.status==='beschikbaar').length;
+
+    document.getElementById('totalBadge').textContent = `${total} interesse`;
+    document.getElementById('sTotal').textContent = total;
+    document.getElementById('sKavels').textContent = withClicks;
+    document.getElementById('sAvail').textContent = avail;
+
+    let maxC=0, maxId='—';
+    for (const [id,c] of Object.entries(clicks)) { if(c>maxC){maxC=c;maxId=id} }
+    document.getElementById('sPopular').textContent = maxC>0 ? `#${maxId}` : '—';
+
+    // Ranking
+    const sorted = Object.entries(clicks).map(([id,c])=>({id:+id,c})).sort((a,b)=>b.c-a.c);
+    const mx = sorted[0]?.c || 1;
+    document.getElementById('rankList').innerHTML = sorted.map((r,i) => {
+        const k = K.find(x=>x.id===r.id);
+        const pct = mx>0?(r.c/mx*100):0;
+        return `<li class="rank-item"><div class="rank-pos ${i===0&&r.c>0?'top':''}">${i+1}</div><div class="rank-grow"><div class="rank-name">Kavel ${r.id} <span style="font-weight:400;color:var(--muted);font-size:.68rem">${k.size}</span></div><div class="rank-bar-bg"><div class="rank-bar" style="width:${pct}%"></div></div></div><div class="rank-count">${r.c}</div></li>`;
+    }).join('');
+
+    // Feed
+    document.getElementById('feedList').innerHTML = feed.slice(0,25).map(f =>
+        `<li class="feed-item"><div class="feed-dot"></div><div><div>${f.text}</div><div class="feed-time">${f.time}</div></div></li>`
+    ).join('');
+}
+
+// ============================================================
+// FILTERS
+// ============================================================
+function toggleFilter(btn) {
+    btn.classList.toggle('on');
+    applyFilters();
+}
+
+function applyFilters() {
+    const showB = document.querySelector('[data-filter="beschikbaar"]').classList.contains('on');
+    const showO = document.querySelector('[data-filter="optie"]').classList.contains('on');
+    const showV = document.querySelector('[data-filter="verkocht"]').classList.contains('on');
+    const priceF = document.getElementById('filterPrice').value;
+    const sizeF = document.getElementById('filterSize').value;
+
+    K.forEach(k => {
+        const poly = document.querySelector(`.kavel-poly[data-id="${k.id}"]`);
+        let show = true;
+
+        // Status
+        if (k.status==='beschikbaar' && !showB) show=false;
+        if (k.status==='optie' && !showO) show=false;
+        if (k.status==='verkocht' && !showV) show=false;
+
+        // Price
+        if (priceF==='200' && k.priceN>200) show=false;
+        if (priceF==='250' && k.priceN>250) show=false;
+        if (priceF==='999' && k.priceN<=250) show=false;
+
+        // Size
+        if (sizeF==='400' && k.sizeN>=400) show=false;
+        if (sizeF==='500' && (k.sizeN<400||k.sizeN>500)) show=false;
+        if (sizeF==='999' && k.sizeN<500) show=false;
+
+        poly.classList.toggle('hidden', !show);
+    });
+}
+
+// ============================================================
+// PANEL TOGGLE
+// ============================================================
+function togglePanel() {
+    document.getElementById('panel').classList.toggle('hide');
+    document.getElementById('panelBtn').classList.toggle('active');
+}
+
+// ============================================================
+// AUTO DEMO
+// ============================================================
+const cursor = document.getElementById('demoCursor');
+const demoToast = document.getElementById('demoToast');
+const demoStepEl = document.getElementById('demoStep');
+
+const DEMO_SCRIPT = [
+    { msg:'Welkom bij de interactieve kavelkaart', wait:2000 },
+    { msg:'Bezoekers klikken op een kavel om interesse te tonen...', kavel:1, wait:1800 },
+    { msg:'Elke klik wordt geregistreerd en zichtbaar in het dashboard', kavel:5, wait:1800 },
+    { msg:'Populaire kavels vallen direct op', kavel:3, wait:1500 },
+    { msg:'Meerdere bezoekers tonen interesse...', kavel:9, wait:1500 },
+    { msg:'De eigenaar ziet real-time wie waar klikt', kavel:6, wait:1500 },
+    { msg:'Zelfs kavels onder optie krijgen interesse', kavel:4, wait:1500 },
+    { msg:'De ranking update automatisch', kavel:1, wait:1500 },
+    { msg:'Kavel 10 — de voordeligste — trekt aandacht', kavel:10, wait:1500 },
+    { msg:'En kavel 12 in de hoek ook', kavel:12, wait:1500 },
+    { msg:'Zo weet u precies welke kavels populair zijn!', wait:2500 },
+];
+
+async function toggleDemo() {
+    if (demoOn) { stopDemo(); return; }
+    demoOn = true;
+    const btn = document.getElementById('demoBtn');
+    btn.textContent = '■ Stop';
+    btn.classList.add('running');
+    demoToast.classList.add('vis');
+    cursor.classList.add('vis');
+
+    for (const step of DEMO_SCRIPT) {
+        if (!demoOn) break;
+        demoStepEl.textContent = step.msg;
+        demoStepEl.classList.add('vis');
+
+        if (step.kavel) {
+            const el = document.querySelector(`.kavel-poly[data-id="${step.kavel}"]`);
+            const svgRect = document.getElementById('plotSvg').getBoundingClientRect();
+            const mapRect = mapArea.getBoundingClientRect();
+            const elRect = el.getBoundingClientRect();
+
+            const cx = elRect.left - mapRect.left + elRect.width/2 - 4;
+            const cy = elRect.top - mapRect.top + elRect.height/2 - 4;
+            cursor.style.left = cx + 'px';
+            cursor.style.top = cy + 'px';
+
+            await sleep(700);
+            if (!demoOn) break;
+
+            // Click ring
+            const ring = document.createElement('div');
+            ring.className = 'demo-ring';
+            ring.style.left = (cx+14)+'px';
+            ring.style.top = (cy+14)+'px';
+            mapArea.appendChild(ring);
+            setTimeout(()=>ring.remove(), 500);
+
+            registerInterest(step.kavel);
+        }
+
+        await sleep(step.wait);
+        if (!demoOn) break;
+    }
+
+    if (demoOn) stopDemo();
+}
+
+function stopDemo() {
+    demoOn = false;
+    document.getElementById('demoBtn').textContent = '▶ Demo';
+    document.getElementById('demoBtn').classList.remove('running');
+    demoToast.classList.remove('vis');
+    demoStepEl.classList.remove('vis');
+    cursor.classList.remove('vis');
+    if (demoTimer) clearTimeout(demoTimer);
+}
+
+function sleep(ms) { return new Promise(r => { demoTimer = setTimeout(r, ms); }); }
+
+// ============================================================
+// INIT
+// ============================================================
+updateDash();
+fetch('api.php?action=stats').then(r=>r.json()).then(j=>{
+    if(!j.ok)return;
+    for(const[key,d] of Object.entries(j.data)){
+        const id=parseInt(key.replace('kavel_',''));
+        if(clicks[id]!==undefined&&d.likes>0){
+            clicks[id]=d.likes;
+            const cb=document.getElementById(`cb-${id}`);
+            cb.querySelector('text').textContent=d.likes;
+            cb.classList.add('vis');
+            const poly=document.querySelector(`.kavel-poly[data-id="${id}"]`);
+            if(!poly.classList.contains('verkocht')&&!poly.classList.contains('optie'))poly.classList.add('clicked');
+        }
+    }
+    updateDash();
+}).catch(()=>{});
+</script>
+</body>
+</html>
