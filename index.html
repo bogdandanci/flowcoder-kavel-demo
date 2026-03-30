@@ -65,8 +65,14 @@
         .main { flex:1; display:flex; overflow:hidden; position:relative; }
 
         /* ==================== MAP ==================== */
-        .map { flex:1; position:relative; overflow:hidden; background:#dce8dc; }
-        .map-inner { position:absolute; inset:0; display:flex; align-items:center; justify-content:center; }
+        .map { flex:1; position:relative; overflow:hidden; background:#2a3a2a; }
+        .map-inner { position:absolute; inset:0; display:flex; align-items:center; justify-content:center; cursor:grab; }
+        .map-inner.grabbing { cursor:grabbing; }
+        /* Zoom controls */
+        .zoom-controls { position:absolute; bottom:1rem; right:1rem; display:flex; flex-direction:column; gap:4px; z-index:20; }
+        .zoom-btn { width:32px; height:32px; background:rgba(255,255,255,.92); border:1px solid var(--border); border-radius:6px; font-size:1.1rem; font-weight:700; cursor:pointer; display:flex; align-items:center; justify-content:center; box-shadow:var(--shadow); transition:background .15s; color:var(--text); }
+        .zoom-btn:hover { background:var(--white); }
+        .zoom-label { text-align:center; font-size:.65rem; color:rgba(255,255,255,.7); font-family:monospace; }
 
         /* The SVG land plot */
         .plot-svg { width:840px; height:580px; }
@@ -300,107 +306,98 @@
         <div class="map-inner">
             <svg class="plot-svg" viewBox="0 0 840 580" id="plotSvg">
                 <defs>
-                    <pattern id="grassPat" width="6" height="6" patternUnits="userSpaceOnUse">
-                        <line x1="0" y1="6" x2="3" y2="0" stroke="#6a9" stroke-width=".5" opacity=".3"/>
-                    </pattern>
+                    <filter id="shadow" x="-20%" y="-20%" width="140%" height="140%">
+                        <feDropShadow dx="0" dy="1" stdDeviation="3" flood-color="rgba(0,0,0,0.4)"/>
+                    </filter>
+                    <filter id="blur-bg">
+                        <feGaussianBlur stdDeviation="0.5"/>
+                    </filter>
                 </defs>
 
-                <!-- Ground -->
-                <rect class="ground" x="0" y="0" width="840" height="580" rx="8"/>
-                <rect class="grass-pattern" x="0" y="0" width="840" height="580" rx="8"/>
+                <!-- Real kavel map photo as background -->
+                <image href="assets/kavel-map.jpg" x="0" y="0" width="840" height="580" preserveAspectRatio="xMidYMid slice"/>
+                <!-- Slight dark overlay so the numbered overlays pop -->
+                <rect x="0" y="0" width="840" height="580" fill="rgba(0,0,0,0.18)"/>
 
-                <!-- Roads -->
-                <rect class="road" x="0" y="0" width="840" height="30"/>
-                <line class="road-line" x1="0" y1="15" x2="840" y2="15"/>
-                <text x="420" y="12" text-anchor="middle" font-size="9" fill="#8a8575" font-family="Inter" font-weight="600" letter-spacing="2">HOOFDSTRAAT</text>
+                <!-- ===== LEFT DIAGONAL CLUSTER ===== -->
+                <!-- K1: bottom-left diagonal row -->
+                <polygon class="kavel-poly" data-id="1"  points="18,405 170,355 215,460 63,510"/>
+                <g class="kavel-label"><text class="nr" x="117" y="433" text-anchor="middle">1</text><text class="info" x="117" y="450" text-anchor="middle">420 m²</text><text class="price" x="117" y="464" text-anchor="middle">€195.000</text></g>
+                <g class="click-badge" id="cb-1"><circle cx="200" cy="365" r="12"/><text x="200" y="370" text-anchor="middle">0</text></g>
 
-                <rect class="road" x="0" y="550" width="840" height="30"/>
-                <line class="road-line" x1="0" y1="565" x2="840" y2="565"/>
-                <text x="420" y="562" text-anchor="middle" font-size="9" fill="#8a8575" font-family="Inter" font-weight="600" letter-spacing="2">WOONLAAN</text>
+                <!-- K2: middle diagonal row -->
+                <polygon class="kavel-poly" data-id="2"  points="88,265 245,215 288,320 130,370"/>
+                <g class="kavel-label"><text class="nr" x="188" y="293" text-anchor="middle">2</text><text class="info" x="188" y="310" text-anchor="middle">385 m²</text><text class="price" x="188" y="324" text-anchor="middle">€185.000</text></g>
+                <g class="click-badge" id="cb-2"><circle cx="270" cy="225" r="12"/><text x="270" y="230" text-anchor="middle">0</text></g>
 
-                <rect class="road" x="0" y="0" width="30" height="580"/>
-                <line class="road-line" x1="15" y1="0" x2="15" y2="580"/>
-                <text x="12" y="290" text-anchor="middle" font-size="9" fill="#8a8575" font-family="Inter" font-weight="600" letter-spacing="2" transform="rotate(-90,12,290)">PARKWEG</text>
+                <!-- K3: top diagonal row -->
+                <polygon class="kavel-poly" data-id="3"  points="168,125 325,75 365,178 208,228"/>
+                <g class="kavel-label"><text class="nr" x="267" y="152" text-anchor="middle">3</text><text class="info" x="267" y="169" text-anchor="middle">450 m²</text><text class="price" x="267" y="183" text-anchor="middle">€210.000</text></g>
+                <g class="click-badge" id="cb-3"><circle cx="350" cy="85" r="12"/><text x="350" y="90" text-anchor="middle">0</text></g>
 
-                <!-- Internal path -->
-                <rect class="road" x="30" y="248" width="810" height="24" rx="0" opacity=".6"/>
-                <line class="road-line" x1="30" y1="260" x2="840" y2="260" opacity=".6"/>
-                <text x="435" y="257" text-anchor="middle" font-size="7" fill="#8a8575" font-family="Inter" font-weight="500" letter-spacing="1">PAD</text>
+                <!-- ===== CENTER CLUSTER ===== -->
+                <!-- K4: center-left area -->
+                <rect class="kavel-poly optie" data-id="4"  x="278" y="248" width="130" height="115" rx="4"/>
+                <g class="kavel-label"><text class="nr" x="343" y="300" text-anchor="middle">4</text><text class="info" x="343" y="317" text-anchor="middle">510 m²</text><text class="price" x="343" y="331" text-anchor="middle">€245.000</text></g>
+                <g class="click-badge" id="cb-4"><circle cx="393" cy="258" r="12"/><text x="393" y="263" text-anchor="middle">0</text></g>
 
-                <!-- Green areas / trees -->
-                <circle class="tree" cx="60" cy="260" r="8"/>
-                <circle class="tree" cx="200" cy="258" r="6"/>
-                <circle class="tree" cx="350" cy="262" r="7"/>
-                <circle class="tree" cx="500" cy="259" r="6"/>
-                <circle class="tree" cx="650" cy="261" r="8"/>
-                <circle class="tree" cx="790" cy="258" r="6"/>
+                <!-- K5: center area -->
+                <rect class="kavel-poly" data-id="5"  x="278" y="375" width="125" height="105" rx="4"/>
+                <g class="kavel-label"><text class="nr" x="340" y="422" text-anchor="middle">5</text><text class="info" x="340" y="439" text-anchor="middle">395 m²</text><text class="price" x="340" y="453" text-anchor="middle">€190.000</text></g>
+                <g class="click-badge" id="cb-5"><circle cx="388" cy="385" r="12"/><text x="388" y="390" text-anchor="middle">0</text></g>
 
-                <!-- ===== ROW 1: Kavels 1-4 (top, facing Hoofdstraat) ===== -->
-                <rect class="kavel-poly" data-id="1" x="40" y="38" width="185" height="200" rx="4"/>
-                <g class="kavel-label"><text class="nr" x="132" y="120" text-anchor="middle">1</text><text class="info" x="132" y="138" text-anchor="middle">420 m²</text><text class="price" x="132" y="152" text-anchor="middle">€195.000</text></g>
-                <g class="click-badge" id="cb-1"><circle cx="210" cy="48" r="11"/><text x="210" y="52" text-anchor="middle">0</text></g>
+                <!-- K6: center-upper-right -->
+                <rect class="kavel-poly" data-id="6"  x="415" y="158" width="120" height="108" rx="4"/>
+                <g class="kavel-label"><text class="nr" x="475" y="206" text-anchor="middle">6</text><text class="info" x="475" y="222" text-anchor="middle">410 m²</text><text class="price" x="475" y="236" text-anchor="middle">€198.000</text></g>
+                <g class="click-badge" id="cb-6"><circle cx="520" cy="168" r="12"/><text x="520" y="173" text-anchor="middle">0</text></g>
 
-                <rect class="kavel-poly" data-id="2" x="235" y="38" width="185" height="200" rx="4"/>
-                <g class="kavel-label"><text class="nr" x="327" y="120" text-anchor="middle">2</text><text class="info" x="327" y="138" text-anchor="middle">385 m²</text><text class="price" x="327" y="152" text-anchor="middle">€185.000</text></g>
-                <g class="click-badge" id="cb-2"><circle cx="405" cy="48" r="11"/><text x="405" y="52" text-anchor="middle">0</text></g>
+                <!-- ===== RIGHT GRID ===== -->
+                <!-- K7: right top-left -->
+                <rect class="kavel-poly verkocht" data-id="7"  x="415" y="278" width="120" height="108" rx="4"/>
+                <g class="kavel-label"><text class="nr" x="475" y="326" text-anchor="middle">7</text><text class="info" x="475" y="342" text-anchor="middle">440 m²</text><text class="price" x="475" y="356" text-anchor="middle">Verkocht</text></g>
+                <g class="click-badge" id="cb-7"><circle cx="520" cy="288" r="12"/><text x="520" y="293" text-anchor="middle">0</text></g>
 
-                <rect class="kavel-poly" data-id="3" x="430" y="38" width="190" height="200" rx="4"/>
-                <g class="kavel-label"><text class="nr" x="525" y="120" text-anchor="middle">3</text><text class="info" x="525" y="138" text-anchor="middle">450 m²</text><text class="price" x="525" y="152" text-anchor="middle">€210.000</text></g>
-                <g class="click-badge" id="cb-3"><circle cx="605" cy="48" r="11"/><text x="605" y="52" text-anchor="middle">0</text></g>
+                <!-- K8: right top-right -->
+                <rect class="kavel-poly" data-id="8"  x="548" y="50" width="140" height="115" rx="4"/>
+                <g class="kavel-label"><text class="nr" x="618" y="100" text-anchor="middle">8</text><text class="info" x="618" y="117" text-anchor="middle">480 m²</text><text class="price" x="618" y="131" text-anchor="middle">€230.000</text></g>
+                <g class="click-badge" id="cb-8"><circle cx="673" cy="60" r="12"/><text x="673" y="65" text-anchor="middle">0</text></g>
 
-                <rect class="kavel-poly optie" data-id="4" x="630" y="38" width="200" height="200" rx="4"/>
-                <g class="kavel-label"><text class="nr" x="730" y="120" text-anchor="middle">4</text><text class="info" x="730" y="138" text-anchor="middle">510 m²</text><text class="price" x="730" y="152" text-anchor="middle">€245.000</text></g>
-                <g class="click-badge" id="cb-4"><circle cx="815" cy="48" r="11"/><text x="815" y="52" text-anchor="middle">0</text></g>
+                <!-- K9: right second-left -->
+                <rect class="kavel-poly" data-id="9"  x="548" y="177" width="140" height="115" rx="4"/>
+                <g class="kavel-label"><text class="nr" x="618" y="227" text-anchor="middle">9</text><text class="info" x="618" y="244" text-anchor="middle">560 m²</text><text class="price" x="618" y="258" text-anchor="middle">€275.000</text></g>
+                <g class="click-badge" id="cb-9"><circle cx="673" cy="187" r="12"/><text x="673" y="192" text-anchor="middle">0</text></g>
 
-                <!-- ===== ROW 2: Kavels 5-8 (middle top, facing pad) ===== -->
-                <rect class="kavel-poly" data-id="5" x="40" y="280" width="185" height="125" rx="4"/>
-                <g class="kavel-label"><text class="nr" x="132" y="335" text-anchor="middle">5</text><text class="info" x="132" y="351" text-anchor="middle">395 m²</text><text class="price" x="132" y="365" text-anchor="middle">€190.000</text></g>
-                <g class="click-badge" id="cb-5"><circle cx="210" cy="290" r="11"/><text x="210" y="294" text-anchor="middle">0</text></g>
+                <!-- K10: right second-right -->
+                <rect class="kavel-poly" data-id="10" x="700" y="50" width="130" height="115" rx="4"/>
+                <g class="kavel-label"><text class="nr" x="765" y="100" text-anchor="middle">10</text><text class="info" x="765" y="117" text-anchor="middle">370 m²</text><text class="price" x="765" y="131" text-anchor="middle">€178.000</text></g>
+                <g class="click-badge" id="cb-10"><circle cx="818" cy="60" r="12"/><text x="818" y="65" text-anchor="middle">0</text></g>
 
-                <rect class="kavel-poly" data-id="6" x="235" y="280" width="185" height="125" rx="4"/>
-                <g class="kavel-label"><text class="nr" x="327" y="335" text-anchor="middle">6</text><text class="info" x="327" y="351" text-anchor="middle">410 m²</text><text class="price" x="327" y="365" text-anchor="middle">€198.000</text></g>
-                <g class="click-badge" id="cb-6"><circle cx="405" cy="290" r="11"/><text x="405" y="294" text-anchor="middle">0</text></g>
+                <!-- K11: right lower-left -->
+                <rect class="kavel-poly optie" data-id="11" x="700" y="177" width="130" height="115" rx="4"/>
+                <g class="kavel-label"><text class="nr" x="765" y="227" text-anchor="middle">11</text><text class="info" x="765" y="244" text-anchor="middle">390 m²</text><text class="price" x="765" y="258" text-anchor="middle">€188.000</text></g>
+                <g class="click-badge" id="cb-11"><circle cx="818" cy="187" r="12"/><text x="818" y="192" text-anchor="middle">0</text></g>
 
-                <rect class="kavel-poly verkocht" data-id="7" x="430" y="280" width="190" height="125" rx="4"/>
-                <g class="kavel-label"><text class="nr" x="525" y="335" text-anchor="middle">7</text><text class="info" x="525" y="351" text-anchor="middle">440 m²</text><text class="price" x="525" y="365" text-anchor="middle">Verkocht</text></g>
-                <g class="click-badge" id="cb-7"><circle cx="605" cy="290" r="11"/><text x="605" y="294" text-anchor="middle">0</text></g>
+                <!-- K12: right lower-right -->
+                <rect class="kavel-poly" data-id="12" x="548" y="305" width="280" height="115" rx="4"/>
+                <g class="kavel-label"><text class="nr" x="688" y="355" text-anchor="middle">12</text><text class="info" x="688" y="372" text-anchor="middle">350 m²</text><text class="price" x="688" y="386" text-anchor="middle">€168.000</text></g>
+                <g class="click-badge" id="cb-12"><circle cx="810" cy="315" r="12"/><text x="810" y="320" text-anchor="middle">0</text></g>
 
-                <rect class="kavel-poly" data-id="8" x="630" y="280" width="200" height="125" rx="4"/>
-                <g class="kavel-label"><text class="nr" x="730" y="335" text-anchor="middle">8</text><text class="info" x="730" y="351" text-anchor="middle">480 m²</text><text class="price" x="730" y="365" text-anchor="middle">€230.000</text></g>
-                <g class="click-badge" id="cb-8"><circle cx="815" cy="290" r="11"/><text x="815" y="294" text-anchor="middle">0</text></g>
-
-                <!-- ===== ROW 3: Kavels 9-12 (bottom, facing Woonlaan) ===== -->
-                <rect class="kavel-poly" data-id="9" x="40" y="415" width="210" height="125" rx="4"/>
-                <g class="kavel-label"><text class="nr" x="145" y="470" text-anchor="middle">9</text><text class="info" x="145" y="486" text-anchor="middle">560 m²</text><text class="price" x="145" y="500" text-anchor="middle">€275.000</text></g>
-                <g class="click-badge" id="cb-9"><circle cx="235" cy="425" r="11"/><text x="235" y="429" text-anchor="middle">0</text></g>
-
-                <rect class="kavel-poly" data-id="10" x="260" y="415" width="180" height="125" rx="4"/>
-                <g class="kavel-label"><text class="nr" x="350" y="470" text-anchor="middle">10</text><text class="info" x="350" y="486" text-anchor="middle">370 m²</text><text class="price" x="350" y="500" text-anchor="middle">€178.000</text></g>
-                <g class="click-badge" id="cb-10"><circle cx="425" cy="425" r="11"/><text x="425" y="429" text-anchor="middle">0</text></g>
-
-                <rect class="kavel-poly optie" data-id="11" x="450" y="415" width="185" height="125" rx="4"/>
-                <g class="kavel-label"><text class="nr" x="542" y="470" text-anchor="middle">11</text><text class="info" x="542" y="486" text-anchor="middle">390 m²</text><text class="price" x="542" y="500" text-anchor="middle">€188.000</text></g>
-                <g class="click-badge" id="cb-11"><circle cx="620" cy="425" r="11"/><text x="620" y="429" text-anchor="middle">0</text></g>
-
-                <rect class="kavel-poly" data-id="12" x="645" y="415" width="185" height="125" rx="4"/>
-                <g class="kavel-label"><text class="nr" x="737" y="470" text-anchor="middle">12</text><text class="info" x="737" y="486" text-anchor="middle">350 m²</text><text class="price" x="737" y="500" text-anchor="middle">€168.000</text></g>
-                <g class="click-badge" id="cb-12"><circle cx="815" cy="425" r="11"/><text x="815" y="429" text-anchor="middle">0</text></g>
-
-                <!-- Bid tags (shown when bids come in) -->
-                <g class="kavel-bid-tag" id="bt-1"><rect x="40" y="222" width="75" height="14" rx="3"/><text x="78" y="232" text-anchor="middle">bod: €0</text></g>
-                <g class="kavel-bid-tag" id="bt-2"><rect x="235" y="222" width="75" height="14" rx="3"/><text x="273" y="232" text-anchor="middle">bod: €0</text></g>
-                <g class="kavel-bid-tag" id="bt-3"><rect x="430" y="222" width="75" height="14" rx="3"/><text x="468" y="232" text-anchor="middle">bod: €0</text></g>
-                <g class="kavel-bid-tag" id="bt-4"><rect x="630" y="222" width="75" height="14" rx="3"/><text x="668" y="232" text-anchor="middle">bod: €0</text></g>
-                <g class="kavel-bid-tag" id="bt-5"><rect x="40" y="395" width="75" height="14" rx="3"/><text x="78" y="405" text-anchor="middle">bod: €0</text></g>
-                <g class="kavel-bid-tag" id="bt-6"><rect x="235" y="395" width="75" height="14" rx="3"/><text x="273" y="405" text-anchor="middle">bod: €0</text></g>
-                <g class="kavel-bid-tag" id="bt-8"><rect x="630" y="395" width="75" height="14" rx="3"/><text x="668" y="405" text-anchor="middle">bod: €0</text></g>
-                <g class="kavel-bid-tag" id="bt-9"><rect x="40" y="525" width="75" height="14" rx="3"/><text x="78" y="535" text-anchor="middle">bod: €0</text></g>
-                <g class="kavel-bid-tag" id="bt-10"><rect x="260" y="525" width="75" height="14" rx="3"/><text x="298" y="535" text-anchor="middle">bod: €0</text></g>
-                <g class="kavel-bid-tag" id="bt-12"><rect x="645" y="525" width="75" height="14" rx="3"/><text x="683" y="535" text-anchor="middle">bod: €0</text></g>
+                <!-- Bid tags (shown when bids placed) -->
+                <g class="kavel-bid-tag" id="bt-1"><rect x="63"  y="490" width="78" height="14" rx="3"/><text x="102" y="500" text-anchor="middle">bod: €0</text></g>
+                <g class="kavel-bid-tag" id="bt-2"><rect x="130" y="350" width="78" height="14" rx="3"/><text x="169" y="360" text-anchor="middle">bod: €0</text></g>
+                <g class="kavel-bid-tag" id="bt-3"><rect x="208" y="210" width="78" height="14" rx="3"/><text x="247" y="220" text-anchor="middle">bod: €0</text></g>
+                <g class="kavel-bid-tag" id="bt-4"><rect x="278" y="348" width="78" height="14" rx="3"/><text x="317" y="358" text-anchor="middle">bod: €0</text></g>
+                <g class="kavel-bid-tag" id="bt-5"><rect x="278" y="465" width="78" height="14" rx="3"/><text x="317" y="475" text-anchor="middle">bod: €0</text></g>
+                <g class="kavel-bid-tag" id="bt-6"><rect x="415" y="250" width="78" height="14" rx="3"/><text x="454" y="260" text-anchor="middle">bod: €0</text></g>
+                <g class="kavel-bid-tag" id="bt-8"><rect x="548" y="150" width="78" height="14" rx="3"/><text x="587" y="160" text-anchor="middle">bod: €0</text></g>
+                <g class="kavel-bid-tag" id="bt-9"><rect x="548" y="277" width="78" height="14" rx="3"/><text x="587" y="287" text-anchor="middle">bod: €0</text></g>
+                <g class="kavel-bid-tag" id="bt-10"><rect x="700" y="150" width="78" height="14" rx="3"/><text x="739" y="160" text-anchor="middle">bod: €0</text></g>
+                <g class="kavel-bid-tag" id="bt-11"><rect x="700" y="277" width="78" height="14" rx="3"/><text x="739" y="287" text-anchor="middle">bod: €0</text></g>
+                <g class="kavel-bid-tag" id="bt-12"><rect x="620" y="405" width="78" height="14" rx="3"/><text x="659" y="415" text-anchor="middle">bod: €0</text></g>
 
                 <!-- North arrow -->
-                <g transform="translate(800,50)">
-                    <circle cx="0" cy="0" r="16" fill="rgba(255,255,255,.85)" stroke="#ccc"/>
+                <g transform="translate(30,30)">
+                    <circle cx="0" cy="0" r="16" fill="rgba(255,255,255,.9)" stroke="#ccc"/>
                     <polygon points="0,-12 -4,0 4,0" fill="var(--red)"/>
                     <polygon points="0,12 -4,0 4,0" fill="#ccc"/>
                     <text x="0" y="-3" text-anchor="middle" font-size="7" font-weight="700" fill="var(--red)" font-family="Inter">N</text>
@@ -414,6 +411,14 @@
             <div class="tooltip-row"><span>Oppervlakte</span><strong id="ttSize"></strong></div>
             <div class="tooltip-row"><span>Prijs</span><strong id="ttPrice"></strong></div>
             <div id="ttStatus"></div>
+        </div>
+
+        <!-- Zoom controls -->
+        <div class="zoom-controls">
+            <button class="zoom-btn" onclick="zoomIn()" title="Inzoomen">+</button>
+            <div class="zoom-label" id="zoomLabel">100%</div>
+            <button class="zoom-btn" onclick="zoomOut()" title="Uitzoomen">−</button>
+            <button class="zoom-btn" onclick="zoomReset()" title="Reset" style="font-size:.65rem;font-weight:600;">↺</button>
         </div>
 
         <!-- Demo elements -->
@@ -954,6 +959,73 @@ fetch('api.php?action=bids').then(r=>r.json()).then(j=>{
         }
     }
 }).catch(()=>{});
+
+// ============================================================
+// ZOOM & PAN
+// ============================================================
+let scale = 1, panX = 0, panY = 0;
+let isPanning = false, startX = 0, startY = 0;
+const svg = document.getElementById('plotSvg');
+const mapInner = document.querySelector('.map-inner');
+
+function applyTransform() {
+    svg.style.transform = `translate(${panX}px, ${panY}px) scale(${scale})`;
+    svg.style.transformOrigin = 'center center';
+    document.getElementById('zoomLabel').textContent = Math.round(scale * 100) + '%';
+}
+
+function zoomIn()    { scale = Math.min(scale * 1.3, 4); applyTransform(); }
+function zoomOut()   { scale = Math.max(scale / 1.3, 0.5); applyTransform(); }
+function zoomReset() { scale = 1; panX = 0; panY = 0; applyTransform(); }
+
+// Mouse wheel zoom
+mapInner.addEventListener('wheel', e => {
+    e.preventDefault();
+    const delta = e.deltaY < 0 ? 1.15 : 0.87;
+    scale = Math.min(Math.max(scale * delta, 0.5), 4);
+    applyTransform();
+}, { passive: false });
+
+// Drag to pan
+mapInner.addEventListener('mousedown', e => {
+    if (e.target.closest('.kavel-poly') || e.target.closest('.zoom-controls') || e.target.closest('.detail') || e.target.closest('.kavel-popup')) return;
+    isPanning = true;
+    startX = e.clientX - panX;
+    startY = e.clientY - panY;
+    mapInner.classList.add('grabbing');
+});
+window.addEventListener('mousemove', e => {
+    if (!isPanning) return;
+    panX = e.clientX - startX;
+    panY = e.clientY - startY;
+    applyTransform();
+});
+window.addEventListener('mouseup', () => { isPanning = false; mapInner.classList.remove('grabbing'); });
+
+// Touch pinch zoom + drag
+let lastTouchDist = 0;
+mapInner.addEventListener('touchstart', e => {
+    if (e.touches.length === 2) {
+        lastTouchDist = Math.hypot(e.touches[0].clientX - e.touches[1].clientX, e.touches[0].clientY - e.touches[1].clientY);
+    } else if (e.touches.length === 1) {
+        isPanning = true;
+        startX = e.touches[0].clientX - panX;
+        startY = e.touches[0].clientY - panY;
+    }
+}, { passive: true });
+mapInner.addEventListener('touchmove', e => {
+    if (e.touches.length === 2) {
+        const dist = Math.hypot(e.touches[0].clientX - e.touches[1].clientX, e.touches[0].clientY - e.touches[1].clientY);
+        scale = Math.min(Math.max(scale * (dist / lastTouchDist), 0.5), 4);
+        lastTouchDist = dist;
+        applyTransform();
+    } else if (e.touches.length === 1 && isPanning) {
+        panX = e.touches[0].clientX - startX;
+        panY = e.touches[0].clientY - startY;
+        applyTransform();
+    }
+}, { passive: true });
+mapInner.addEventListener('touchend', () => { isPanning = false; });
 
 // ============================================================
 // INIT
