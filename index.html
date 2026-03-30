@@ -196,10 +196,39 @@
         .detail-interest { padding:0 1rem; margin-bottom:1rem; display:flex; align-items:center; gap:.6rem; }
         .detail-interest-count { font-size:1.1rem; font-weight:800; color:var(--green); }
         .detail-interest-label { font-size:.8rem; color:var(--muted); }
-        .interest-btn { display:block; width:calc(100% - 2rem); margin:0 1rem 1rem; padding:.65rem; background:var(--green); color:var(--white); border:none; border-radius:8px; font-size:.9rem; font-weight:600; font-family:inherit; cursor:pointer; transition:background .15s; }
+        .interest-btn { display:block; width:calc(100% - 2rem); margin:0 1rem 0.5rem; padding:.65rem; background:var(--green); color:var(--white); border:none; border-radius:8px; font-size:.9rem; font-weight:600; font-family:inherit; cursor:pointer; transition:background .15s; }
         .interest-btn:hover { background:#246841; }
         .interest-btn:disabled { background:#A5D6A7; cursor:default; }
         .interest-btn.done { background:var(--green-bg); color:var(--green); }
+
+        /* ===== AUCTION ===== */
+        .auction-box { margin:0 1rem 1rem; border:2px solid var(--gold); border-radius:10px; overflow:hidden; }
+        .auction-header { background:var(--gold); padding:.5rem .85rem; display:flex; align-items:center; justify-content:space-between; }
+        .auction-header-title { color:var(--white); font-weight:700; font-size:.85rem; display:flex; align-items:center; gap:.4rem; }
+        .auction-timer { background:rgba(0,0,0,.25); color:var(--white); font-size:.75rem; font-weight:700; padding:.15rem .5rem; border-radius:10px; font-variant-numeric:tabular-nums; }
+        .auction-body { padding:.75rem .85rem; background:var(--gold-bg); }
+        .auction-current { display:flex; align-items:baseline; gap:.4rem; margin-bottom:.5rem; }
+        .auction-current-label { font-size:.72rem; color:var(--muted); }
+        .auction-current-bid { font-size:1.5rem; font-weight:800; color:var(--gold); }
+        .auction-current-count { font-size:.75rem; color:var(--muted); margin-left:auto; }
+        .auction-demand { height:5px; background:var(--border); border-radius:3px; margin-bottom:.65rem; overflow:hidden; }
+        .auction-demand-bar { height:100%; background:linear-gradient(90deg, var(--gold), var(--red)); border-radius:3px; transition:width .5s; }
+        .auction-form { display:flex; flex-direction:column; gap:.4rem; }
+        .auction-row { display:flex; gap:.4rem; }
+        .auction-input { flex:1; padding:.5rem .6rem; border:1px solid var(--border); border-radius:6px; font-size:.82rem; font-family:inherit; }
+        .auction-input:focus { outline:none; border-color:var(--gold); }
+        .auction-submit { padding:.5rem .9rem; background:var(--gold); color:var(--white); border:none; border-radius:6px; font-size:.82rem; font-weight:700; font-family:inherit; cursor:pointer; white-space:nowrap; }
+        .auction-submit:hover { background:#b8801f; }
+        .auction-submit:disabled { opacity:.5; cursor:default; }
+        .auction-msg { font-size:.75rem; padding:.3rem .5rem; border-radius:5px; display:none; }
+        .auction-msg.ok { display:block; background:#e8f5e9; color:var(--green); }
+        .auction-msg.err { display:block; background:#fdecea; color:var(--red); }
+        .auction-min { font-size:.7rem; color:var(--muted); }
+        /* Kavel bid overlay on map */
+        .kavel-bid-tag { pointer-events:none; opacity:0; transition:opacity .3s; }
+        .kavel-bid-tag.vis { opacity:1; }
+        .kavel-bid-tag rect { fill:#D4982A; rx:3; }
+        .kavel-bid-tag text { fill:white; font-size:9px; font-weight:700; font-family:'Inter',sans-serif; }
 
         /* ==================== FOOTER ==================== */
         .ftr { background:var(--white); border-top:1px solid var(--border); padding:.4rem 1.2rem; font-size:.7rem; color:var(--muted); text-align:center; flex-shrink:0; }
@@ -357,6 +386,18 @@
                 <g class="kavel-label"><text class="nr" x="737" y="470" text-anchor="middle">12</text><text class="info" x="737" y="486" text-anchor="middle">350 m²</text><text class="price" x="737" y="500" text-anchor="middle">€168.000</text></g>
                 <g class="click-badge" id="cb-12"><circle cx="815" cy="425" r="11"/><text x="815" y="429" text-anchor="middle">0</text></g>
 
+                <!-- Bid tags (shown when bids come in) -->
+                <g class="kavel-bid-tag" id="bt-1"><rect x="40" y="222" width="75" height="14" rx="3"/><text x="78" y="232" text-anchor="middle">bod: €0</text></g>
+                <g class="kavel-bid-tag" id="bt-2"><rect x="235" y="222" width="75" height="14" rx="3"/><text x="273" y="232" text-anchor="middle">bod: €0</text></g>
+                <g class="kavel-bid-tag" id="bt-3"><rect x="430" y="222" width="75" height="14" rx="3"/><text x="468" y="232" text-anchor="middle">bod: €0</text></g>
+                <g class="kavel-bid-tag" id="bt-4"><rect x="630" y="222" width="75" height="14" rx="3"/><text x="668" y="232" text-anchor="middle">bod: €0</text></g>
+                <g class="kavel-bid-tag" id="bt-5"><rect x="40" y="395" width="75" height="14" rx="3"/><text x="78" y="405" text-anchor="middle">bod: €0</text></g>
+                <g class="kavel-bid-tag" id="bt-6"><rect x="235" y="395" width="75" height="14" rx="3"/><text x="273" y="405" text-anchor="middle">bod: €0</text></g>
+                <g class="kavel-bid-tag" id="bt-8"><rect x="630" y="395" width="75" height="14" rx="3"/><text x="668" y="405" text-anchor="middle">bod: €0</text></g>
+                <g class="kavel-bid-tag" id="bt-9"><rect x="40" y="525" width="75" height="14" rx="3"/><text x="78" y="535" text-anchor="middle">bod: €0</text></g>
+                <g class="kavel-bid-tag" id="bt-10"><rect x="260" y="525" width="75" height="14" rx="3"/><text x="298" y="535" text-anchor="middle">bod: €0</text></g>
+                <g class="kavel-bid-tag" id="bt-12"><rect x="645" y="525" width="75" height="14" rx="3"/><text x="683" y="535" text-anchor="middle">bod: €0</text></g>
+
                 <!-- North arrow -->
                 <g transform="translate(800,50)">
                     <circle cx="0" cy="0" r="16" fill="rgba(255,255,255,.85)" stroke="#ccc"/>
@@ -399,7 +440,38 @@
                 <div class="detail-interest-count" id="detClicks">0</div>
                 <div class="detail-interest-label">mensen toonden interesse</div>
             </div>
-            <button class="interest-btn" id="detBtn" onclick="registerInterest()">Ik heb interesse</button>
+            <button class="interest-btn" id="detBtn" onclick="registerInterest()">&#10084; Ik heb interesse</button>
+
+            <!-- Auction Box -->
+            <div class="auction-box" id="auctionBox">
+                <div class="auction-header">
+                    <div class="auction-header-title">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M18 3L21 6L8 19L3 19L3 14Z"/><line x1="15" y1="6" x2="18" y2="9"/></svg>
+                        Veiling — Hoogste bod wint
+                    </div>
+                    <div class="auction-timer" id="auctionTimer">7d 0u 0m</div>
+                </div>
+                <div class="auction-body">
+                    <div class="auction-current">
+                        <span class="auction-current-label">Hoogste bod:</span>
+                        <span class="auction-current-bid" id="auctionHighest">Nog geen bod</span>
+                        <span class="auction-current-count" id="auctionCount">0 bieders</span>
+                    </div>
+                    <div class="auction-demand"><div class="auction-demand-bar" id="auctionDemandBar" style="width:0%"></div></div>
+                    <div class="auction-min" id="auctionMin">Minimaal bod: vraagprijs</div>
+                    <div class="auction-form" id="auctionForm">
+                        <div class="auction-row">
+                            <input class="auction-input" id="bidNaam" placeholder="Uw naam" type="text">
+                            <input class="auction-input" id="bidEmail" placeholder="E-mail" type="email">
+                        </div>
+                        <div class="auction-row">
+                            <input class="auction-input" id="bidBedrag" placeholder="Uw bod (€)" type="number" min="1000" step="1000">
+                            <button class="auction-submit" id="bidSubmit" onclick="submitBid()">Uitbrengen</button>
+                        </div>
+                        <div class="auction-msg" id="bidMsg"></div>
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
 
@@ -522,6 +594,8 @@ function openDetail(k) {
         btn.className = 'interest-btn';
     }
     d.classList.add('open');
+    updateAuctionPanel(k.id);
+    updateTimer();
 }
 
 function closeDetail() {
@@ -723,6 +797,163 @@ function stopDemo() {
 }
 
 function sleep(ms) { return new Promise(r => { demoTimer = setTimeout(r, ms); }); }
+
+// ============================================================
+// AUCTION
+// ============================================================
+const bids = {}; // { kavelId: { highest: 0, count: 0 } }
+K.forEach(k => { bids[k.id] = { highest: 0, count: 0 }; });
+
+// Auction ends 7 days from now (in a real project, set a fixed end date)
+const AUCTION_END = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
+
+function fmtEuro(n) {
+    return '€' + n.toLocaleString('nl-NL');
+}
+
+function updateAuctionPanel(kavelId) {
+    const k = K.find(x => x.id === kavelId);
+    const b = bids[kavelId];
+    const asking = k.priceN * 1000;
+    const highest = b.highest;
+
+    document.getElementById('auctionHighest').textContent = highest > 0 ? fmtEuro(highest) : 'Nog geen bod';
+    document.getElementById('auctionCount').textContent = b.count + ' bieder' + (b.count !== 1 ? 's' : '');
+
+    // Minimum next bid
+    const minBid = highest > 0 ? highest + 1000 : asking;
+    document.getElementById('auctionMin').textContent = `Minimaal bod: ${fmtEuro(minBid)}`;
+    if (document.getElementById('bidBedrag').value === '') {
+        document.getElementById('bidBedrag').placeholder = `Min. ${fmtEuro(minBid)}`;
+        document.getElementById('bidBedrag').min = minBid;
+    }
+
+    // Demand bar: % over asking price (maxes at 20% over = 100%)
+    const overshoot = highest > asking ? Math.min((highest - asking) / (asking * 0.2), 1) : (b.count / 10);
+    document.getElementById('auctionDemandBar').style.width = (overshoot * 100) + '%';
+}
+
+function updateBidTagOnMap(kavelId, highest) {
+    const tag = document.getElementById(`bt-${kavelId}`);
+    if (!tag) return;
+    if (highest > 0) {
+        tag.querySelector('text').textContent = 'bod: ' + fmtEuro(highest);
+        tag.classList.add('vis');
+    }
+}
+
+async function submitBid() {
+    if (!selected) return;
+    const kavelId = selected.id;
+    const k = selected;
+
+    const naam   = document.getElementById('bidNaam').value.trim();
+    const email  = document.getElementById('bidEmail').value.trim();
+    const bedrag = parseInt(document.getElementById('bidBedrag').value);
+    const msg    = document.getElementById('bidMsg');
+    const btn    = document.getElementById('bidSubmit');
+
+    if (!naam || !email || !bedrag) { showBidMsg('Vul alle velden in', false); return; }
+    if (!email.includes('@')) { showBidMsg('Ongeldig e-mailadres', false); return; }
+
+    const asking = k.priceN * 1000;
+    const minBid = bids[kavelId].highest > 0 ? bids[kavelId].highest + 1000 : asking;
+    if (bedrag < minBid) { showBidMsg(`Minimum bod is ${fmtEuro(minBid)}`, false); return; }
+
+    btn.disabled = true;
+    btn.textContent = '...';
+
+    try {
+        const res = await fetch('api.php', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ action: 'bid', kavel_id: `kavel_${kavelId}`, naam, email, bedrag })
+        });
+        const json = await res.json();
+        if (json.ok) {
+            bids[kavelId].highest = json.highest;
+            bids[kavelId].count   = json.count;
+            updateAuctionPanel(kavelId);
+            updateBidTagOnMap(kavelId, json.highest);
+            updateDemandPrice(kavelId);
+            showBidMsg(`Bod van ${fmtEuro(bedrag)} geregistreerd! U hoort van ons.`, true);
+            document.getElementById('bidBedrag').value = '';
+            // Also log to feed
+            const t = new Date().toLocaleTimeString('nl-NL',{hour:'2-digit',minute:'2-digit',second:'2-digit'});
+            feed.unshift({ text:`Bod ${fmtEuro(bedrag)} op Kavel ${kavelId}`, time:t });
+            updateDash();
+        } else {
+            showBidMsg(json.error || 'Er ging iets mis', false);
+        }
+    } catch {
+        // Offline fallback: store locally
+        bids[kavelId].highest = Math.max(bids[kavelId].highest, bedrag);
+        bids[kavelId].count++;
+        updateAuctionPanel(kavelId);
+        updateBidTagOnMap(kavelId, bedrag);
+        updateDemandPrice(kavelId);
+        showBidMsg(`Bod van ${fmtEuro(bedrag)} opgeslagen (offline demo)`, true);
+        document.getElementById('bidBedrag').value = '';
+        const t = new Date().toLocaleTimeString('nl-NL',{hour:'2-digit',minute:'2-digit',second:'2-digit'});
+        feed.unshift({ text:`Bod ${fmtEuro(bedrag)} op Kavel ${kavelId}`, time:t });
+        updateDash();
+    }
+
+    btn.disabled = false;
+    btn.textContent = 'Uitbrengen';
+}
+
+function showBidMsg(text, ok) {
+    const el = document.getElementById('bidMsg');
+    el.textContent = text;
+    el.className = 'auction-msg ' + (ok ? 'ok' : 'err');
+    setTimeout(() => el.className = 'auction-msg', 4000);
+}
+
+// Demand-driven price: if highest bid > asking, update price label on map
+function updateDemandPrice(kavelId) {
+    const k = K.find(x => x.id === kavelId);
+    const b = bids[kavelId];
+    if (b.highest > k.priceN * 1000) {
+        // Update the price label in the SVG
+        const labels = document.querySelectorAll('.kavel-label');
+        labels.forEach(grp => {
+            // Find by kavel number text
+            const nrText = grp.querySelector('.nr');
+            if (nrText && nrText.textContent.trim() === String(kavelId)) {
+                const priceText = grp.querySelector('.price');
+                if (priceText) priceText.textContent = fmtEuro(b.highest) + ' ↑';
+            }
+        });
+    }
+}
+
+// Countdown timer
+function updateTimer() {
+    const now = new Date();
+    const diff = AUCTION_END - now;
+    if (diff <= 0) { document.getElementById('auctionTimer').textContent = 'Verlopen'; return; }
+    const d = Math.floor(diff / 86400000);
+    const h = Math.floor((diff % 86400000) / 3600000);
+    const m = Math.floor((diff % 3600000) / 60000);
+    document.getElementById('auctionTimer').textContent = `${d}d ${h}u ${m}m`;
+}
+setInterval(updateTimer, 30000);
+updateTimer();
+
+// Load bids from API on start
+fetch('api.php?action=bids').then(r=>r.json()).then(j=>{
+    if(!j.ok||!j.summary) return;
+    for(const[key,data] of Object.entries(j.summary)){
+        const id=parseInt(key.replace('kavel_',''));
+        if(bids[id]!==undefined){
+            bids[id].highest=data.highest||0;
+            bids[id].count=data.count||0;
+            if(data.highest>0) updateBidTagOnMap(id,data.highest);
+            updateDemandPrice(id);
+        }
+    }
+}).catch(()=>{});
 
 // ============================================================
 // INIT

@@ -22,6 +22,7 @@ if (!is_dir($dataDir)) {
 
 $statsFile = $dataDir . '/stats.json';
 $leadsFile = $dataDir . '/leads.json';
+$bidsFile  = $dataDir . '/bids.json';
 
 // --- Helpers ---
 
@@ -155,7 +156,86 @@ switch ($action) {
         echo json_encode(['ok' => true, 'message' => 'Bedankt! We nemen contact met u op.']);
         break;
 
+    case 'bids':
+        // GET all bids or bids for a specific kavel
+        $bids = loadJson($bidsFile, []);
+        $kavelId = sanitizeId($_GET['kavel_id'] ?? '');
+        if ($kavelId) {
+            $kavelBids = array_filter($bids, fn($b) => $b['kavel_id'] === $kavelId);
+            $kavelBids = array_values($kavelBids);
+            usort($kavelBids, fn($a,$b) => $b['bedrag'] - $a['bedrag']);
+            $highest = $kavelBids[0]['bedrag'] ?? 0;
+            echo json_encode(['ok' => true, 'bids' => $kavelBids, 'highest' => $highest, 'count' => count($kavelBids)]);
+        } else {
+            // Return highest bid + count per kavel
+            $summary = [];
+            foreach ($bids as $bid) {
+                $kid = $bid['kavel_id'];
+                if (!isset($summary[$kid])) $summary[$kid] = ['highest' => 0, 'count' => 0];
+                $summary[$kid]['count']++;
+                if ($bid['bedrag'] > $summary[$kid]['highest']) $summary[$kid]['highest'] = $bid['bedrag'];
+            }
+            echo json_encode(['ok' => true, 'summary' => $summary, 'all_bids' => $bids]);
+        }
+        break;
+
+    case 'bid':
+        $kavelId = sanitizeId($_POST['kavel_id'] ?? '');
+        $naam    = trim($_POST['naam'] ?? '');
+        $email   = trim($_POST['email'] ?? '');
+        $bedrag  = intval($_POST['bedrag'] ?? 0);
+        $telefoon = trim($_POST['telefoon'] ?? '');
+
+        if (!$kavelId || !$naam || !$email || $bedrag <= 0) {
+            http_response_code(400);
+            echo json_encode(['ok' => false, 'error' => 'Kavel, naam, e-mail en bod zijn verplicht']);
+            break;
+        }
+        if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
+            http_response_code(400);
+            echo json_encode(['ok' => false, 'error' => 'Ongeldig e-mailadres']);
+            break;
+        }
+        if ($bedrag < 1000) {
+            http_response_code(400);
+            echo json_encode(['ok' => false, 'error' => 'Minimum bod is €1.000']);
+            break;
+        }
+
+        $bids = loadJson($bidsFile, []);
+
+        // Check minimum: must beat current highest by at least €1.000
+        $kavelBids = array_filter($bids, fn($b) => $b['kavel_id'] === $kavelId);
+        $highest = 0;
+        foreach ($kavelBids as $b) { if ($b['bedrag'] > $highest) $highest = $b['bedrag']; }
+        if ($highest > 0 && $bedrag < $highest + 1000) {
+            http_response_code(400);
+            echo json_encode(['ok' => false, 'error' => "Uw bod moet minimaal €" . number_format($highest + 1000, 0, ',', '.') . " zijn"]);
+            break;
+        }
+
+        $bids[] = [
+            'id'        => uniqid(),
+            'timestamp' => date('c'),
+            'kavel_id'  => $kavelId,
+            'naam'      => htmlspecialchars($naam, ENT_QUOTES, 'UTF-8'),
+            'email'     => htmlspecialchars($email, ENT_QUOTES, 'UTF-8'),
+            'telefoon'  => htmlspecialchars($telefoon, ENT_QUOTES, 'UTF-8'),
+            'bedrag'    => $bedrag,
+        ];
+        saveJson($bidsFile, $bids);
+
+        // New highest
+        $newHighest = max($highest, $bedrag);
+        echo json_encode([
+            'ok'      => true,
+            'message' => 'Uw bod is geregistreerd!',
+            'highest' => $newHighest,
+            'count'   => count(array_filter($bids, fn($b) => $b['kavel_id'] === $kavelId))
+        ]);
+        break;
+
     default:
         http_response_code(400);
-        echo json_encode(['ok' => false, 'error' => 'Onbekende actie. Gebruik: stats, like, share, lead']);
+        echo json_encode(['ok' => false, 'error' => 'Onbekende actie. Gebruik: stats, like, share, lead, bid, bids']);
 }
