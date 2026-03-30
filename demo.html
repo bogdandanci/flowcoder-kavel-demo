@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Demo — Interactieve Kavelkaart | Flowcoder</title>
+    <meta name="robots" content="noindex, nofollow">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
+    <style>
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+        :root {
+            --bg: #0D1117;
+            --surface: #161B22;
+            --border: #30363D;
+            --green: #00FF41;
+            --green-dim: #00cc33;
+            --text: #E6EDF3;
+            --muted: #8B949E;
+            --white: #FFFFFF;
+        }
+        body { font-family:'Inter',-apple-system,sans-serif; background:var(--bg); color:var(--text); height:100vh; display:flex; flex-direction:column; overflow:hidden; }
+
+        /* ===== TOP BAR ===== */
+        .topbar { background:var(--surface); border-bottom:1px solid var(--border); padding:0 1.25rem; display:flex; align-items:center; height:52px; flex-shrink:0; gap:.75rem; }
+        .logo { display:flex; align-items:center; gap:.45rem; text-decoration:none; color:var(--green); font-family:'JetBrains Mono',monospace; font-weight:500; font-size:.95rem; white-space:nowrap; }
+        .logo svg { width:20px; height:20px; }
+        .logo-tag { opacity:.5; color:var(--muted); font-size:.78rem; margin-left:.15rem; }
+        .sep { width:1px; height:20px; background:var(--border); }
+        .project-label { font-size:.88rem; font-weight:600; color:var(--text); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:260px; }
+        .spacer { flex:1; }
+
+        .live-dot { display:flex; align-items:center; gap:.35rem; font-size:.75rem; color:var(--green-dim); white-space:nowrap; }
+        .live-dot-circle { width:7px; height:7px; background:var(--green); border-radius:50%; animation:blink 2s infinite; }
+        @keyframes blink { 0%,100%{opacity:1} 50%{opacity:.3} }
+
+        /* Device switcher */
+        .devices { display:flex; gap:2px; background:var(--bg); border-radius:7px; padding:3px; }
+        .dev-btn { width:34px; height:30px; border:none; background:transparent; color:var(--muted); border-radius:5px; cursor:pointer; display:flex; align-items:center; justify-content:center; transition:all .15s; }
+        .dev-btn:hover { color:var(--text); background:var(--surface); }
+        .dev-btn.on { color:var(--green); background:var(--surface); }
+        .dev-btn svg { width:17px; height:17px; }
+        .size-tag { font-family:'JetBrains Mono',monospace; font-size:.7rem; color:var(--muted); margin-left:.3rem; min-width:46px; }
+
+        .cta { display:inline-flex; align-items:center; gap:.35rem; padding:.38rem .9rem; background:var(--green); color:var(--bg); border:none; border-radius:6px; font-size:.8rem; font-weight:700; font-family:inherit; cursor:pointer; text-decoration:none; white-space:nowrap; transition:background .15s; }
+        .cta:hover { background:var(--green-dim); }
+        .cta svg { width:13px; height:13px; }
+
+        /* ===== INFO STRIP ===== */
+        .infostrip { background:#0a1a0a; border-bottom:1px solid #1a3a1a; padding:.35rem 1.25rem; display:flex; align-items:center; gap:1.5rem; flex-shrink:0; font-size:.72rem; color:var(--muted); }
+        .infostrip-item { display:flex; align-items:center; gap:.35rem; }
+        .infostrip-item svg { width:12px; height:12px; color:var(--green-dim); }
+        .infostrip-item strong { color:var(--green-dim); }
+
+        /* ===== PREVIEW ===== */
+        .preview { flex:1; display:flex; align-items:center; justify-content:center; padding:1.25rem; background:var(--bg); overflow:hidden; position:relative; }
+        .frame-wrap { position:relative; max-width:100%; max-height:100%; display:flex; align-items:center; justify-content:center; width:100%; height:100%; }
+        .frame { background:var(--white); border-radius:10px; box-shadow:0 0 0 1px var(--border), 0 16px 50px rgba(0,0,0,.55); overflow:hidden; transition:width .35s ease, border-radius .35s; height:100%; }
+        .frame.desktop { width:100%; border-radius:8px; }
+        .frame.tablet  { width:768px; }
+        .frame.mobile  { width:375px; border-radius:20px; box-shadow:0 0 0 8px #1a1f26, 0 20px 60px rgba(0,0,0,.6); }
+        .frame iframe  { width:100%; height:100%; border:none; display:block; }
+
+        /* Mobile notch simulation */
+        .frame.mobile::before { content:''; display:block; height:28px; background:#0D1117; display:flex; align-items:center; justify-content:center; flex-shrink:0; }
+
+        /* ===== BOTTOM BAR ===== */
+        .bottombar { background:var(--surface); border-top:1px solid var(--border); padding:.45rem 1.25rem; display:flex; align-items:center; justify-content:space-between; flex-shrink:0; }
+        .bottombar-left { font-size:.72rem; color:var(--muted); }
+        .bottombar-left a { color:var(--green-dim); text-decoration:none; }
+        .bottombar-left a:hover { text-decoration:underline; }
+        .bottombar-right { font-size:.7rem; color:var(--muted); font-family:'JetBrains Mono',monospace; }
+
+        /* ===== TOOLTIP on hover for device buttons ===== */
+        .dev-btn { position:relative; }
+
+        /* ===== MOBILE ===== */
+        @media(max-width:700px){
+            .topbar { padding:0 .75rem; gap:.5rem; }
+            .logo-tag, .sep, .size-tag, .live-dot, .infostrip { display:none; }
+            .project-label { font-size:.8rem; max-width:160px; }
+            .cta span { display:none; }
+            .cta { padding:.38rem .6rem; }
+            .preview { padding:.5rem; }
+            .frame.tablet,.frame.mobile { width:100%; border-radius:8px; }
+            .frame.mobile::before { display:none; }
+            .bottombar { padding:.4rem .75rem; }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Top Bar -->
+    <div class="topbar">
+        <a href="https://flowcoder.nl" class="logo" target="_blank">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>
+            Flowcoder
+            <span class="logo-tag">demo</span>
+        </a>
+        <div class="sep"></div>
+        <span class="project-label">Interactieve Kavelkaart — De Groene Weide</span>
+        <div class="spacer"></div>
+        <div class="live-dot"><div class="live-dot-circle"></div>Live preview</div>
+        <div class="sep"></div>
+        <div class="devices">
+            <button class="dev-btn on" data-dev="desktop" title="Desktop">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
+            </button>
+            <button class="dev-btn" data-dev="tablet" title="Tablet">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="2" width="16" height="20" rx="2"/><circle cx="12" cy="17" r=".5" fill="currentColor"/></svg>
+            </button>
+            <button class="dev-btn" data-dev="mobile" title="Mobiel">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="5" y="2" width="14" height="20" rx="2"/><circle cx="12" cy="17" r=".5" fill="currentColor"/></svg>
+            </button>
+        </div>
+        <span class="size-tag" id="sizeTag">Volledig</span>
+        <div class="sep"></div>
+        <a href="https://flowcoder.nl" class="cta" target="_blank">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+            <span>Wil ik ook!</span>
+        </a>
+    </div>
+
+    <!-- Info strip -->
+    <div class="infostrip">
+        <div class="infostrip-item">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+            Dit is een <strong>live demo</strong> — alles wat u ziet is echt werkend
+        </div>
+        <div class="infostrip-item">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 3L21 6L8 19L3 19L3 14Z"/></svg>
+            Klik op een kavel &rarr; <strong>bied mee</strong> of toon interesse
+        </div>
+        <div class="infostrip-item">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/></svg>
+            Rechts: <strong>eigenaar dashboard</strong> met alle biedingen &amp; interesse live
+        </div>
+        <div class="infostrip-item">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+            Druk op <strong>Demo</strong> in de kaart voor een rondleiding
+        </div>
+    </div>
+
+    <!-- Preview -->
+    <div class="preview">
+        <div class="frame-wrap">
+            <div class="frame desktop" id="frame">
+                <iframe src="index.html" id="previewIframe" title="Interactieve Kavelkaart Demo"></iframe>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bottom bar -->
+    <div class="bottombar">
+        <div class="bottombar-left">
+            Demo door <a href="https://flowcoder.nl" target="_blank">Flowcoder</a> &mdash; KVK 42021092 &mdash; Wil u ook zo&apos;n website? <a href="https://flowcoder.nl" target="_blank">Neem contact op</a>
+        </div>
+        <div class="bottombar-right" id="dateLabel"></div>
+    </div>
+
+    <script>
+        document.getElementById('dateLabel').textContent = new Date().toLocaleDateString('nl-NL',{year:'numeric',month:'long',day:'numeric'});
+
+        const frame = document.getElementById('frame');
+        const sizeTag = document.getElementById('sizeTag');
+        const labels = { desktop:'Volledig', tablet:'768px', mobile:'375px' };
+
+        document.querySelectorAll('.dev-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const dev = btn.dataset.dev;
+                document.querySelectorAll('.dev-btn').forEach(b => b.classList.remove('on'));
+                btn.classList.add('on');
+                frame.className = `frame ${dev}`;
+                sizeTag.textContent = labels[dev];
+            });
+        });
+    </script>
+</body>
+</html>
